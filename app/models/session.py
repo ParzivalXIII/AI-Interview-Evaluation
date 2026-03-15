@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -21,8 +19,8 @@ class InterviewSession(SQLModel, table=True):
     status: SessionStatus = Field(default=SessionStatus.READY, index=True, nullable=False)
     question_count: int = Field(default=0, nullable=False)
     failure_reason: str | None = Field(default=None, nullable=True)
-    created_at: datetime = Field(default_factory=datetime.now, nullable=False)
-    updated_at: datetime = Field(default_factory=datetime.now, nullable=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
-    questions: list[InterviewQuestion] = Relationship(back_populates="session")
-    answers: list[CandidateAnswer] = Relationship(back_populates="session")
+    questions: list["InterviewQuestion"] = Relationship(back_populates="session")
+    answers: list["CandidateAnswer"] = Relationship(back_populates="session")

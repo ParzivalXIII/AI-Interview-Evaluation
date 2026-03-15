@@ -21,7 +21,19 @@ def _make_llm(timeout: int) -> ChatOpenAI:
         base_url=settings.openrouter_base_url,
         timeout=timeout,
         max_retries=2,
+        model_kwargs={"response_format": {"type": "json_object"}},
     )
+
+
+def _extract_json(raw: str) -> str:
+    """Strip markdown code fences if the model wraps output in them."""
+    raw = raw.strip()
+    if raw.startswith("```"):
+        lines = raw.splitlines()
+        # drop opening fence (```json or ```) and closing fence (```)
+        inner = lines[1:-1] if lines[-1].strip() == "```" else lines[1:]
+        raw = "\n".join(inner).strip()
+    return raw
 
 
 def generate_questions(
@@ -41,7 +53,7 @@ def generate_questions(
     try:
         result = chain.invoke({"role": role, "difficulty": difficulty, "count": count})
         raw = result.content if hasattr(result, "content") else str(result)
-        data = json.loads(raw)          # type: ignore[assignment]
+        data = json.loads(_extract_json(str(raw)))
         return QuestionGenerationOutput.model_validate(data)
     except Exception as exc:
         logger.error("question_generation_failed", role=role, difficulty=difficulty, error=str(exc))
@@ -73,7 +85,7 @@ def evaluate_answer(
             }
         )
         raw = result.content if hasattr(result, "content") else str(result)
-        data = json.loads(raw)              # type: ignore[assignment]
+        data = json.loads(_extract_json(str(raw)))
         return EvaluationOutput.model_validate(data)
     except Exception as exc:
         logger.error("answer_evaluation_failed", question=question_text[:80], error=str(exc))
