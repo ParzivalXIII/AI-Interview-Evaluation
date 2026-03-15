@@ -356,7 +356,7 @@ with gr.Blocks(title="AI Interview") as demo:
 
     async def on_prev(state: dict):
         if not state["questions"] or state["current_idx"] <= 0:
-            return {}
+            return gr.skip()
         new_state = copy.deepcopy(state)
         new_state["current_idx"] -= 1
         return {session_state: new_state, **_q_view(new_state)}
@@ -364,7 +364,7 @@ with gr.Blocks(title="AI Interview") as demo:
     async def on_next(state: dict):
         questions = state["questions"]
         if not questions or state["current_idx"] >= len(questions) - 1:
-            return {}
+            return gr.skip()
         new_state = copy.deepcopy(state)
         new_state["current_idx"] += 1
         return {session_state: new_state, **_q_view(new_state)}
@@ -376,7 +376,7 @@ with gr.Blocks(title="AI Interview") as demo:
 
     async def on_submit(answer_text: str, state: dict):
         if not state.get("session_id"):
-            return {}
+            return gr.skip()
         if not answer_text or not answer_text.strip():
             return {
                 session_error_md: gr.update(
@@ -390,7 +390,7 @@ with gr.Blocks(title="AI Interview") as demo:
         q_id = q["question_id"]
 
         if q_id in state["answers"]:
-            return {}
+            return gr.skip()
 
         try:
             accepted = await client.submit_answer(
@@ -432,11 +432,11 @@ with gr.Blocks(title="AI Interview") as demo:
 
     async def on_poll_tick(state: dict):
         if not state.get("session_id"):
-            return {}
+            return gr.skip()
 
         non_terminal_ids = get_non_terminal_answer_ids(state)
         if not non_terminal_ids:
-            return {}
+            return gr.skip()
 
         new_state = copy.deepcopy(state)
         session_id = state["session_id"]
