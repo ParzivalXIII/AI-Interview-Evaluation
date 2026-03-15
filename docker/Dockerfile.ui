@@ -1,0 +1,46 @@
+# ── Stage 1: Builder ─────────────────────────────────────────────────────────
+FROM python:3.12-slim AS builder
+
+WORKDIR /build
+
+# Install uv
+RUN pip install --no-cache-dir uv
+
+# Copy dependency manifests
+COPY pyproject.toml README.md ./
+
+# Install only the UI's runtime dependencies (no dev extras, no backend-only pkgs)
+# We install into an isolated prefix to copy cleanly into the final stage.
+RUN uv pip install --system --no-cache \
+    "gradio>=5.0" \
+    "httpx>=0.28.0" \
+    "pydantic>=2.9.0" \
+    "python-dotenv>=1.0.1"
+
+
+# ── Stage 2: Final ───────────────────────────────────────────────────────────
+FROM python:3.12-slim AS final
+
+WORKDIR /app
+
+# Non-root user for security
+RUN useradd --create-home --shell /bin/bash appuser
+
+# Copy installed packages from builder
+COPY --from=builder /usr/local/lib/python3.12/site-packages \
+                    /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Copy only the UI source (not the entire repo)
+COPY --chown=appuser:appuser interview-ui/ /app/interview-ui/
+
+USER appuser
+
+EXPOSE 7860
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:7860/')" || exit 1
+
+# Run from interview-ui/ so relative imports (from client, from state) resolve
+WORKDIR /app/interview-ui
+CMD ["python", "app.py"]
