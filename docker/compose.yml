@@ -65,6 +65,22 @@ services:
     networks:
       - app-network
 
+  ui:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.ui
+    ports:
+      - "${UI_PORT:-7860}:7860"
+    environment:
+      - BACKEND_URL=http://api:8000
+      - UI_HOST=0.0.0.0
+      - UI_PORT=7860
+    depends_on:
+      api:
+        condition: service_started
+    networks:
+      - app-network
+
 volumes:
   postgres_data:
 
