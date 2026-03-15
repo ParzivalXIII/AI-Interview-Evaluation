@@ -4,12 +4,10 @@ All HTTP calls are mocked with respx so no live backend is needed.
 """
 from __future__ import annotations
 
-import pytest
 import httpx
+import pytest
 import respx
-
-from client import InterviewAPIClient, APIError
-
+from client import APIError, InterviewAPIClient
 
 # ---------------------------------------------------------------------------
 # Fixtures

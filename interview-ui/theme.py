@@ -1,11 +1,11 @@
 """Gradio theme and custom CSS constants for the interview UI."""
 from __future__ import annotations
 
-import gradio as gr
+from gradio.themes import Soft, colors
 
-THEME = gr.themes.Soft(
-    primary_hue=gr.themes.colors.slate,
-    neutral_hue=gr.themes.colors.slate,
+THEME = Soft(
+    primary_hue=colors.slate,
+    neutral_hue=colors.slate,
 )
 
 CUSTOM_CSS = """

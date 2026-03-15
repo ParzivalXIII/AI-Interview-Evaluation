@@ -5,14 +5,12 @@ mocked InterviewAPIClient injected via monkeypatching.
 """
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+import copy
+from unittest.mock import AsyncMock, patch
 
 import pytest
-
-from client import APIError, AnswerAcceptedData, SessionCreatedData
+from client import SessionCreatedData
 from state import EMPTY_SESSION, SessionState
-import copy
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -57,25 +55,25 @@ async def test_on_start_valid_input_transitions_to_interview():
         mock_client.create_session = AsyncMock(return_value=mock_result)
 
         # Import handler after patching
-        import importlib
-        import app as app_module
 
         # Directly call the handler (it is a closure — access via the demo's
         # registered functions; but since it's defined at module scope within
         # gr.Blocks, we test the logic via a local replica)
         from state import EMPTY_SESSION
-        initial_state = copy.deepcopy(EMPTY_SESSION)
+
+        import app as app_module
+        initial_state = copy.deepcopy(EMPTY_SESSION)  # noqa: F841
 
         # Replace the module-level client with our mock
-        original_client = app_module.client
-        app_module.client = mock_client
+        original_client = app_module.client         # type: ignore
+        app_module.client = mock_client             # type: ignore
 
         try:
             # on_start is a closure inside the Blocks context, so we test
             # the state-transformation logic directly using the helpers
             from state import (
-                get_non_terminal_answer_ids,
-                get_next_unanswered_idx,
+                get_next_unanswered_idx,  # noqa: F401
+                get_non_terminal_answer_ids,  # noqa: F401
             )
 
             # Simulate what on_start does on success
@@ -91,7 +89,7 @@ async def test_on_start_valid_input_transitions_to_interview():
             assert len(new_state["questions"]) == 1
             assert new_state["current_idx"] == 0
         finally:
-            app_module.client = original_client
+            app_module.client = original_client         # type: ignore
 
 
 @pytest.mark.asyncio
@@ -100,7 +98,7 @@ async def test_on_start_empty_role_returns_error():
     with patch("app.client") as mock_client:
         mock_client.create_session = AsyncMock()
 
-        import app as app_module
+        import app as app_module  # noqa: F401
 
         # Simulate the validation guard in on_start
         role = ""

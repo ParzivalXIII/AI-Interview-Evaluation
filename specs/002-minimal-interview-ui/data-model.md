@@ -39,6 +39,7 @@ Represents the full live state of one interview session in one browser tab.
 | `answers` | `dict[int, AnswerData]` | Map of `question_id → AnswerData` for all submitted answers |
 
 **Initial value** (empty state before any session is started):
+
 ```python
 {"session_id": None, "role": "", "difficulty": "mid", "questions": [], "current_idx": 0, "answers": {}}
 ```

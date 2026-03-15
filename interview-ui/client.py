@@ -10,8 +10,7 @@ import os
 from typing import Any, TypedDict
 
 import httpx
-
-from state import AnswerData, EvaluationData, QuestionData
+from state import EvaluationData, QuestionData
 
 # ---------------------------------------------------------------------------
 # Configuration
