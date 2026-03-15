@@ -1,0 +1,343 @@
+openapi: 3.1.0
+info:
+  title: Async Interview Evaluation API
+  version: 0.1.0
+  description: Contract for interview session creation, answer submission, status retrieval, and session summaries.
+servers:
+  - url: http://localhost:8000
+paths:
+  /sessions:
+    post:
+      summary: Create interview session
+      operationId: createInterviewSession
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionRequest'
+      responses:
+        '201':
+          description: Session created with generated questions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionCreatedResponse'
+        '400':
+          description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /sessions/{sessionId}:
+    get:
+      summary: Get interview session status
+      operationId: getInterviewSession
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      responses:
+        '200':
+          description: Session found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionDetailResponse'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /sessions/{sessionId}/answers:
+    post:
+      summary: Submit candidate answer for evaluation
+      operationId: submitCandidateAnswer
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitAnswerRequest'
+      responses:
+        '202':
+          description: Answer accepted and queued for evaluation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnswerAcceptedResponse'
+        '400':
+          description: Invalid answer request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Session or question not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Duplicate answer submission conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /sessions/{sessionId}/answers/{answerId}:
+    get:
+      summary: Get answer evaluation status and result
+      operationId: getAnswerResult
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+        - $ref: '#/components/parameters/AnswerId'
+      responses:
+        '200':
+          description: Answer found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnswerResultResponse'
+        '404':
+          description: Answer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /sessions/{sessionId}/summary:
+    get:
+      summary: Get session summary including questions, answers, and results
+      operationId: getSessionSummary
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      responses:
+        '200':
+          description: Session summary returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionSummaryResponse'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  parameters:
+    SessionId:
+      name: sessionId
+      in: path
+      required: true
+      schema:
+        type: string
+    AnswerId:
+      name: answerId
+      in: path
+      required: true
+      schema:
+        type: string
+  schemas:
+    CreateSessionRequest:
+      type: object
+      required:
+        - role
+        - difficulty
+      properties:
+        role:
+          type: string
+          minLength: 1
+        difficulty:
+          type: string
+          enum: [junior, mid, senior]
+        questionCount:
+          type: integer
+          minimum: 1
+          maximum: 10
+          default: 5
+    SessionCreatedResponse:
+      type: object
+      required:
+        - sessionId
+        - status
+        - questions
+      properties:
+        sessionId:
+          type: string
+        status:
+          type: string
+          enum: [ready]
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Question'
+    SessionDetailResponse:
+      type: object
+      required:
+        - sessionId
+        - role
+        - difficulty
+        - status
+        - questions
+      properties:
+        sessionId:
+          type: string
+        role:
+          type: string
+        difficulty:
+          type: string
+        status:
+          type: string
+          enum: [ready, failed, completed]
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Question'
+        failureReason:
+          type: string
+          nullable: true
+    SubmitAnswerRequest:
+      type: object
+      required:
+        - questionId
+        - answerText
+      properties:
+        questionId:
+          type: string
+        answerText:
+          type: string
+          minLength: 1
+    AnswerAcceptedResponse:
+      type: object
+      required:
+        - answerId
+        - sessionId
+        - questionId
+        - status
+      properties:
+        answerId:
+          type: string
+        sessionId:
+          type: string
+        questionId:
+          type: string
+        status:
+          type: string
+          enum: [pending_evaluation]
+    AnswerResultResponse:
+      type: object
+      required:
+        - answerId
+        - sessionId
+        - questionId
+        - answerText
+        - status
+      properties:
+        answerId:
+          type: string
+        sessionId:
+          type: string
+        questionId:
+          type: string
+        answerText:
+          type: string
+        status:
+          type: string
+          enum: [pending_evaluation, in_progress, completed, failed]
+        evaluation:
+          $ref: '#/components/schemas/EvaluationResult'
+        failureReason:
+          type: string
+          nullable: true
+    SessionSummaryResponse:
+      type: object
+      required:
+        - sessionId
+        - role
+        - difficulty
+        - status
+        - questions
+      properties:
+        sessionId:
+          type: string
+        role:
+          type: string
+        difficulty:
+          type: string
+        status:
+          type: string
+        questions:
+          type: array
+          items:
+            type: object
+            required:
+              - question
+              - answers
+            properties:
+              question:
+                $ref: '#/components/schemas/Question'
+              answers:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AnswerResultResponse'
+    Question:
+      type: object
+      required:
+        - questionId
+        - sequenceNumber
+        - text
+      properties:
+        questionId:
+          type: string
+        sequenceNumber:
+          type: integer
+        text:
+          type: string
+        type:
+          type: string
+          nullable: true
+    EvaluationResult:
+      type: object
+      nullable: true
+      required:
+        - evaluationStatus
+        - schemaVersion
+        - promptVersion
+        - modelName
+      properties:
+        evaluationStatus:
+          type: string
+          enum: [completed, failed, incomplete]
+        score:
+          type: number
+          nullable: true
+        feedback:
+          type: string
+          nullable: true
+        strengths:
+          type: array
+          items:
+            type: string
+        improvements:
+          type: array
+          items:
+            type: string
+        schemaVersion:
+          type: string
+        rubricVersion:
+          type: string
+        promptVersion:
+          type: string
+        modelName:
+          type: string
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
